@@ -1,0 +1,58 @@
+package main
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type ObjetoRecebido struct {
+	Chave1 string `json:"chave1"`
+	Chave2 string `json:"chave2"`
+}
+
+func main() {
+	router := gin.Default()
+
+	// Configurar CORS
+	router.Use(func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(http.StatusOK)
+			return
+		}
+
+		c.Next()
+	})
+
+	// Defina suas rotas aqui
+	router.GET("/api/exemplo", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"mensagem": "Olá do backend!"})
+	})
+
+	router.POST("/api/enviar-objeto", func(c *gin.Context) {
+		var objeto ObjetoRecebido
+
+		// Decodificar o objeto JSON
+		if err := c.BindJSON(&objeto); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"erro": "Erro ao decodificar o objeto JSON"})
+			return
+		}
+
+		// Faça algo com o objeto recebido
+		// ...
+
+		fmt.Printf("Dados recebidos do frontend: %+v\n", objeto)
+
+		// Responda ao cliente
+		c.JSON(http.StatusOK, gin.H{"mensagem": "Objeto recebido com sucesso!"})
+	})
+
+	// Inicie o servidor
+	router.Run(":8080")
+}
