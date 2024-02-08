@@ -10,6 +10,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
+	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
 
@@ -42,6 +43,7 @@ func main() {
 
 	// Rotas
 	router.POST("api/add-product", newProduct)
+	router.GET("api/get-products-list", getProducts)
 
 	// Iniciando servidor
 	router.Run(":8080")
@@ -86,4 +88,34 @@ func newProduct(c *gin.Context) {
 
 	// Resposta ao cliente
 	c.JSON(http.StatusOK, "Produto salvo na DB")
+}
+
+func getProducts(c *gin.Context) {
+	client := initFirebase()
+	defer client.Close()
+	// Buscar dados do Firestore
+	iter := client.Collection("Products").Documents(ctx)
+	defer iter.Stop()
+
+	var result []map[string]interface{}
+
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			log.Fatalf("Erro ao iterar documentos: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "Erro ao buscar dados"})
+			return
+		}
+
+		// Mapear dados do documento para um mapa
+		data := doc.Data()
+		result = append(result, data)
+
+		fmt.Printf("Dados do Firestore: %v\n", data)
+	}
+
+	c.JSON(http.StatusOK, result)
 }
